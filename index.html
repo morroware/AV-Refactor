@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Castle AV Controls</title>
+    <!-- Google Fonts with fallback for LiveCode browser widget -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" onerror="this.remove()">
+    <!-- Fallback font stack defined in CSS below -->
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            background-attachment: fixed;
+            color: #e8e8ed;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Ambient glow effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .centered-content {
+            text-align: center;
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 80px rgba(99, 102, 241, 0.1);
+            max-width: 90%;
+            width: 480px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle gradient border effect */
+        .centered-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #22d3ee, #6366f1);
+            opacity: 0.8;
+        }
+
+        .logo {
+            max-width: 180px;
+            margin-bottom: 1.5rem;
+            filter: brightness(1.1) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1));
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            filter: brightness(1.2) drop-shadow(0 0 30px rgba(99, 102, 241, 0.4));
+            transform: scale(1.02);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #e8e8ed 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h5 {
+            color: #8b8b9a;
+            font-size: 0.95rem;
+            font-weight: 400;
+            margin: 0 0 1.5rem 0;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.875rem;
+            margin-top: 1.25rem;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 1rem;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .button:hover::before {
+            left: 100%;
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.special-link {
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0a0a0f;
+            box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+        }
+
+        .button.special-link:hover {
+            box-shadow: 0 6px 25px rgba(34, 211, 238, 0.4);
+        }
+
+        #passwordDialog {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #passwordForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .password-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            align-items: center;
+        }
+
+        #passwordInput {
+            width: 100%;
+            padding: 0.875rem 3rem 0.875rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(26, 26, 46, 0.8);
+            color: #e8e8ed;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        #passwordInput:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        #passwordInput::placeholder {
+            color: #6b6b7a;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: #6b6b7a;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+            border-radius: 8px;
+        }
+
+        .toggle-password:hover {
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        #submitPassword {
+            padding: 0.875rem 2.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            min-width: 140px;
+        }
+
+        #submitPassword:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        #submitPassword:active {
+            transform: translateY(0);
+        }
+
+        #errorMessage {
+            color: #f87171;
+            margin-top: 0.25rem;
+            min-height: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .attempt-counter {
+            color: #6b6b7a;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #6366f1;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .shake #passwordInput {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .zone-button-loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Tooltip styles */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 0.75rem;
+            background: #1a1a2e;
+            color: #e8e8ed;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            white-space: nowrap;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Better focus styles */
+        #passwordInput:focus-visible,
+        .button:focus-visible,
+        #submitPassword:focus-visible {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+        }
+
+        .admin-link {
+            margin-top: 1.75rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-link a {
+            color: #8b8b9a;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .admin-link a:hover {
+            color: #6366f1;
+        }
+
+        .admin-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-button:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .admin-button svg {
+            opacity: 0.7;
+        }
+
+        .help-text {
+            color: #6b6b7a;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            line-height: 1.5;
+        }
+
+        .loading {
+            color: #8b8b9a;
+            font-style: normal;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .loading::before {
+            content: '';
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-radius: 50%;
+            border-top-color: #6366f1;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .error-loading {
+            color: #f87171;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .retry-btn {
+            margin-top: 0.75rem;
+            padding: 0.625rem 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e8e8ed;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .retry-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Tablet adjustments */
+        @media (max-width: 520px) {
+            .centered-content {
+                padding: 2rem 1.5rem;
+                border-radius: 20px;
+                width: 95%;
+                max-width: none;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .logo {
+                max-width: 150px;
+            }
+        }
+
+        /* Mobile-specific button improvements */
+        @media (max-width: 480px) {
+            .centered-content {
+                padding: 1.5rem 1rem;
+                border-radius: 16px;
+                margin: 0.5rem;
+            }
+
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.625rem;
+            }
+
+            .button {
+                padding: 1rem 0.75rem;
+                font-size: 0.875rem;
+                min-height: 56px;
+                border-radius: 10px;
+                text-align: center;
+                line-height: 1.2;
+                word-break: break-word;
+                hyphens: auto;
+            }
+
+            .button.special-link {
+                grid-column: span 1;
+            }
+
+            h1 {
+                font-size: 1.35rem;
+            }
+
+            h5 {
+                font-size: 0.875rem;
+                margin-bottom: 1rem;
+            }
+
+            .logo {
+                max-width: 130px;
+                margin-bottom: 1rem;
+            }
+
+            .admin-link {
+                margin-top: 1.25rem;
+                padding-top: 1rem;
+            }
+
+            .admin-button {
+                padding: 0.5rem 0.875rem;
+                font-size: 0.85rem;
+            }
+
+            .help-text {
+                font-size: 0.8rem;
+                margin-top: 0.75rem;
+            }
+        }
+
+        /* Extra small screens - single column with balanced buttons */
+        @media (max-width: 340px) {
+            .button-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .button {
+                min-height: 52px;
+                padding: 0.875rem 1rem;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (pointer: coarse) {
+            .button {
+                min-height: 48px;
+            }
+
+            .button:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="centered-content">
+        <div id="passwordDialog">
+            <div id="passwordForm">
+                <img src="logo.png" alt="Castle AV Controls Logo" class="logo">
+                <h1>Castle AV Controls</h1>
+                <h5>Enter password to continue</h5>
+                <div class="password-container">
+                    <input type="password" id="passwordInput" placeholder="Enter password" aria-label="Password" autocomplete="current-password">
+                    <button type="button" id="togglePassword" class="toggle-password" aria-label="Show password" title="Show/hide password">
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <button id="submitPassword">Sign In</button>
+                <p id="errorMessage" role="alert" aria-live="polite"></p>
+                <p id="attemptCounter" class="attempt-counter"></p>
+            </div>
+        </div>
+
+        <div class="container" style="display: none;">
+            <img src="logo.png" alt="Castle AV Controls Logo" class="logo">
+            <h1>Castle AV Controls</h1>
+            <div class="button-grid" id="zone-buttons">
+                <span class="loading">Loading zones...</span>
+            </div>
+            <div class="admin-link">
+                <a href="zonemanager.php" title="Add, edit, or manage zones" class="admin-button">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                    </svg>
+                    Zone Manager
+                </a>
+            </div>
+            <p class="help-text">Select a zone above to control AV equipment in that area.</p>
+        </div>
+    </div>
+    <!-- LiveCode browser widget compatibility layer -->
+    <script src="livecode-compat.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Load zones dynamically from API with timeout protection
+        function loadZones() {
+            const container = document.getElementById('zone-buttons');
+            container.innerHTML = '<span class="loading">Loading zones...</span>';
+
+            // Use LiveCode-compatible fetch if available
+            const fetchFn = (window.LiveCodeCompat && window.LiveCodeCompat.fetch) || fetch;
+
+            // Create abort controller for timeout (with fallback)
+            let controller, timeoutId;
+            try {
+                controller = new AbortController();
+                timeoutId = setTimeout(() => controller.abort(), 10000);
+            } catch (e) {
+                controller = { signal: null };
+                timeoutId = null;
+            }
+
+            fetchFn('api/zones.php', { signal: controller.signal, timeout: 10000 })
+                .then(response => {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    container.innerHTML = '';
+
+                    // Add zone buttons
+                    if (data.zones && data.zones.length > 0) {
+                        data.zones.forEach(zone => {
+                            const link = document.createElement('a');
+                            link.href = zone.id + '/';
+                            link.className = 'button';
+                            link.textContent = zone.name || zone.id;
+                            link.setAttribute('role', 'button');
+                            link.setAttribute('aria-label', `Open ${zone.name || zone.id} zone controls`);
+                            if (zone.description) {
+                                link.setAttribute('title', zone.description);
+                            }
+                            if (zone.color) {
+                                link.style.background = `linear-gradient(135deg, ${zone.color} 0%, ${adjustColor(zone.color, -20)} 100%)`;
+                                // Ensure good text contrast
+                                const brightness = getBrightness(zone.color);
+                                link.style.color = brightness > 128 ? '#0a0a0f' : '#ffffff';
+                                link.style.boxShadow = `0 4px 15px ${hexToRgba(zone.color, 0.3)}`;
+                            }
+                            container.appendChild(link);
+                        });
+                    } else {
+                        container.innerHTML = '<p class="help-text">No zones configured. Use Zone Manager to add zones.</p>';
+                    }
+
+                    // Add special links (Quick Links)
+                    if (data.specialLinks && data.specialLinks.length > 0) {
+                        data.specialLinks.forEach(link => {
+                            const a = document.createElement('a');
+                            a.href = link.url;
+                            a.className = 'button special-link';
+                            a.textContent = link.name;
+                            a.setAttribute('role', 'button');
+                            if (link.description) {
+                                a.setAttribute('title', link.description);
+                            }
+                            if (link.openInNewTab) {
+                                a.setAttribute('target', '_blank');
+                                a.setAttribute('rel', 'noopener noreferrer');
+                            }
+                            if (link.color) {
+                                a.style.background = `linear-gradient(135deg, ${link.color} 0%, ${adjustColor(link.color, -20)} 100%)`;
+                                // Ensure good text contrast for custom colors
+                                const brightness = getBrightness(link.color);
+                                a.style.color = brightness > 128 ? '#0a0a0f' : '#ffffff';
+                                a.style.boxShadow = `0 4px 15px ${hexToRgba(link.color, 0.3)}`;
+                            }
+                            container.appendChild(a);
+                        });
+                    }
+                })
+                .catch(error => {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    const isTimeout = error.name === 'AbortError' || error.message === 'Request timeout';
+                    console.error('Failed to load zones:', isTimeout ? 'Request timed out' : error);
+                    // Show error with retry option
+                    container.innerHTML = `
+                        <div class="error-loading">
+                            <p>${isTimeout ? 'Loading zones timed out.' : 'Failed to load zones.'} Using default zones.</p>
+                            <button class="retry-btn" onclick="loadZones()">Retry</button>
+                        </div>
+                        <a href="bowling/" class="button">Bowling</a>
+                        <a href="bowlingbar/" class="button">BowlingBar</a>
+                        <a href="rink/" class="button">Rink</a>
+                        <a href="jesters/" class="button">Jesters</a>
+                        <a href="facility/" class="button">Facility</a>
+                        <a href="outside/" class="button">Outside</a>
+                        <a href="all/" class="button">ALL</a>
+                        <a href="multi/" class="button">Multi</a>
+                        <a href="dashboard/" class="button special-link">Dashboard</a>
+                        <a href="osd/" class="button special-link">OSD</a>
+                    `;
+                });
+        }
+
+        // Helper function to calculate color brightness
+        function getBrightness(hexColor) {
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        }
+
+        // Helper function to adjust color brightness
+        function adjustColor(hexColor, amount) {
+            const hex = hexColor.replace('#', '');
+            let r = parseInt(hex.substr(0, 2), 16);
+            let g = parseInt(hex.substr(2, 2), 16);
+            let b = parseInt(hex.substr(4, 2), 16);
+
+            r = Math.max(0, Math.min(255, r + amount));
+            g = Math.max(0, Math.min(255, g + amount));
+            b = Math.max(0, Math.min(255, b + amount));
+
+            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Helper function to convert hex to rgba
+        function hexToRgba(hexColor, alpha) {
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // Load zones when container becomes visible (after password)
+        const zoneObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const mainContainer = document.querySelector('.container');
+                    if (mainContainer && mainContainer.style.display !== 'none') {
+                        loadZones();
+                        zoneObserver.disconnect();
+                    }
+                }
+            });
+        });
+
+        const mainContainer = document.querySelector('.container');
+        if (mainContainer) {
+            zoneObserver.observe(mainContainer, { attributes: true });
+            // Also load immediately if already visible
+            if (mainContainer.style.display !== 'none') {
+                loadZones();
+            }
+        }
+    </script>
+</body>
+</html>

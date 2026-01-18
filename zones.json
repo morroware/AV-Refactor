@@ -1,0 +1,106 @@
+{
+    "_readme": "Zone Management Configuration - Edit this file to add/remove/modify zones",
+    "_instructions": {
+        "adding_zone": "Add a new entry with unique 'id' (lowercase, no spaces). Set 'enabled' to true.",
+        "removing_zone": "Set 'enabled' to false or remove the entry entirely. Directory will remain.",
+        "display_order": "Zones appear in the order listed here. Reorder as needed.",
+        "hidden_zones": "Set 'showInNav' to false to hide from main navigation but keep functional."
+    },
+    "zones": [
+        {
+            "id": "bowling",
+            "name": "Bowling Lanes",
+            "description": "Bowling lanes area AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "bowling",
+            "color": "#00C853"
+        },
+        {
+            "id": "bowlingbar",
+            "name": "Bowling Bar",
+            "description": "Bowling bar area AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "bar",
+            "color": "#00C853"
+        },
+        {
+            "id": "rink",
+            "name": "Rink",
+            "description": "Roller rink area AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "rink",
+            "color": "#00C853"
+        },
+        {
+            "id": "jesters",
+            "name": "Jesters",
+            "description": "Jesters area AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "entertainment",
+            "color": "#00C853"
+        },
+        {
+            "id": "facility",
+            "name": "Facility",
+            "description": "Facility-wide AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "facility",
+            "color": "#00C853"
+        },
+        {
+            "id": "outside",
+            "name": "Outside",
+            "description": "Outdoor area AV controls",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "outdoor",
+            "color": "#00C853"
+        },
+        {
+            "id": "all",
+            "name": "ALL",
+            "description": "Control all zones simultaneously",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "all",
+            "color": "#FF9800"
+        },
+        {
+            "id": "multi",
+            "name": "Multi",
+            "description": "Multi-zone control interface",
+            "enabled": true,
+            "showInNav": true,
+            "icon": "multi",
+            "color": "#FF9800"
+        }
+    ],
+    "specialLinks": [
+        {
+            "id": "dashboard",
+            "name": "Dashboard",
+            "url": "dashboard/",
+            "enabled": true,
+            "showInNav": true,
+            "color": "#2196F3"
+        },
+        {
+            "id": "osd",
+            "name": "OSD",
+            "url": "osd/",
+            "enabled": true,
+            "showInNav": true,
+            "color": "#2196F3"
+        }
+    ],
+    "settings": {
+        "defaultColor": "#00C853",
+        "allowUserZoneCreation": true,
+        "requirePasswordForZoneManagement": true
+    }
+}

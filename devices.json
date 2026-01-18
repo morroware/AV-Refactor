@@ -1,0 +1,182 @@
+{
+    "_readme": "Device Configuration - Manage all receivers and transmitters here",
+    "_instructions": {
+        "adding_receiver": "Add a new entry to 'receivers' with unique 'name', 'ip', 'type' (video/audio), and 'show_power' boolean",
+        "adding_transmitter": "Add a new entry to 'transmitters' with unique 'name' and 'channel' number",
+        "removing": "Remove the entry from the appropriate array or set 'enabled' to false"
+    },
+    "receivers": [
+        {
+            "name": "Bowling Bar TV 1",
+            "ip": "192.168.8.60",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Bowling Bar TV 2",
+            "ip": "192.168.8.61",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Bowling Bar TV 3",
+            "ip": "192.168.8.62",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Bowling Bar TV 4",
+            "ip": "192.168.8.63",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Billiards TV",
+            "ip": "192.168.8.54",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "NeoVerse 1",
+            "ip": "192.168.8.50",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "NeoVerse 2",
+            "ip": "192.168.8.51",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "NeoVerse 3",
+            "ip": "192.168.8.52",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Dining Area TV",
+            "ip": "192.168.8.70",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Rink Video Display",
+            "ip": "192.168.8.13",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Attic RX 2",
+            "ip": "192.168.8.12",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Attic RX 4",
+            "ip": "192.168.8.20",
+            "type": "video",
+            "show_power": true,
+            "enabled": true
+        },
+        {
+            "name": "Bowling Bar Music",
+            "ip": "192.168.8.28",
+            "type": "audio",
+            "show_power": false,
+            "enabled": true
+        },
+        {
+            "name": "Axe/Billiards Music",
+            "ip": "192.168.8.27",
+            "type": "audio",
+            "show_power": false,
+            "enabled": true
+        },
+        {
+            "name": "Bowling Music",
+            "ip": "192.168.8.25",
+            "type": "audio",
+            "show_power": false,
+            "enabled": true
+        },
+        {
+            "name": "Rink Music",
+            "ip": "192.168.8.15",
+            "type": "audio",
+            "show_power": false,
+            "enabled": true
+        },
+        {
+            "name": "Facility Zone Pro",
+            "ip": "192.168.8.81",
+            "type": "audio",
+            "show_power": false,
+            "enabled": true
+        }
+    ],
+    "transmitters": [
+        {
+            "name": "Cable Box 1 (Attic TX 1)",
+            "channel": 7,
+            "enabled": true
+        },
+        {
+            "name": "Cable Box 2 (Attic TX 2)",
+            "channel": 3,
+            "enabled": true
+        },
+        {
+            "name": "Cable Box 3 (Attic TX 3)",
+            "channel": 4,
+            "enabled": true
+        },
+        {
+            "name": "Apple TV",
+            "channel": 2,
+            "enabled": true
+        },
+        {
+            "name": "Unifi Signage",
+            "channel": 5,
+            "enabled": true
+        },
+        {
+            "name": "Mobile Video TX",
+            "channel": 9,
+            "enabled": true
+        },
+        {
+            "name": "Mobile Audio TX",
+            "channel": 1,
+            "enabled": true
+        },
+        {
+            "name": "RockBot Audio",
+            "channel": 10,
+            "enabled": true
+        },
+        {
+            "name": "Wireless Mic TX",
+            "channel": 8,
+            "enabled": true
+        }
+    ],
+    "settings": {
+        "max_volume": 11,
+        "min_volume": 0,
+        "volume_step": 1,
+        "api_timeout": 2
+    }
+}
