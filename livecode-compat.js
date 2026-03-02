@@ -395,6 +395,282 @@
         }
     };
 
+    // Channel number buffer for multi-digit channel entry
+    // In LiveCode browser widget, rapid digit presses often only register once.
+    // This buffers digits and sends the complete channel number after a timeout.
+    var ChannelBuffer = {
+        _digits: '',
+        _timeout: null,
+        _delay: 1500,
+        _onChannel: null,
+        _overlay: null,
+
+        init: function(options) {
+            options = options || {};
+            if (options.delay) this._delay = options.delay;
+            if (options.onChannel) this._onChannel = options.onChannel;
+        },
+
+        addDigit: function(digit) {
+            digit = String(digit);
+            if (!/^[0-9]$/.test(digit)) return;
+
+            this._digits += digit;
+
+            if (this._overlay) {
+                this._updateOverlayDisplay();
+            }
+
+            if (this._timeout) clearTimeout(this._timeout);
+            var self = this;
+            this._timeout = setTimeout(function() {
+                self.send();
+            }, self._delay);
+        },
+
+        send: function() {
+            if (this._timeout) {
+                clearTimeout(this._timeout);
+                this._timeout = null;
+            }
+            if (this._digits === '') return;
+
+            var channel = this._digits;
+            this._digits = '';
+
+            if (this._overlay) {
+                this._updateOverlayDisplay();
+            }
+
+            if (this._onChannel) {
+                this._onChannel(channel);
+            }
+
+            LiveCodeBridge.send('channelEntered', { channel: channel });
+        },
+
+        clear: function() {
+            if (this._timeout) {
+                clearTimeout(this._timeout);
+                this._timeout = null;
+            }
+            this._digits = '';
+            if (this._overlay) {
+                this._updateOverlayDisplay();
+            }
+        },
+
+        getDigits: function() {
+            return this._digits;
+        },
+
+        sendDigits: function(channel, digitCallback, delayBetween) {
+            var digits = String(channel).split('');
+            delayBetween = delayBetween || 300;
+
+            digits.forEach(function(digit, index) {
+                setTimeout(function() {
+                    digitCallback(digit, index, digits.length);
+                }, index * delayBetween);
+            });
+        },
+
+        _updateOverlayDisplay: function() {
+            var display = document.getElementById('lc-channel-display');
+            if (display) {
+                display.textContent = this._digits || '---';
+            }
+        }
+    };
+
+    // On-screen channel input overlay for LiveCode browser widget
+    var ChannelOverlay = {
+        _element: null,
+        _visible: false,
+
+        show: function(options) {
+            options = options || {};
+            if (this._element) {
+                this._element.style.display = 'block';
+                this._visible = true;
+                return;
+            }
+
+            var overlay = document.createElement('div');
+            overlay.id = 'lc-channel-overlay';
+            overlay.innerHTML =
+                '<style>' +
+                    '#lc-channel-overlay {' +
+                        'background: rgba(26, 26, 46, 0.95);' +
+                        'border: 1px solid rgba(255, 255, 255, 0.1);' +
+                        'border-radius: 16px;' +
+                        'padding: 1rem;' +
+                        'max-width: 280px;' +
+                        'margin: 1rem auto;' +
+                        'box-shadow: 0 8px 32px rgba(0,0,0,0.4);' +
+                    '}' +
+                    '#lc-channel-overlay.fixed-position {' +
+                        'position: fixed;' +
+                        'bottom: 20px;' +
+                        'right: 20px;' +
+                        'z-index: 10000;' +
+                        'margin: 0;' +
+                    '}' +
+                    '#lc-channel-display {' +
+                        'font-size: 2rem;' +
+                        'font-weight: 700;' +
+                        'text-align: center;' +
+                        'color: #e8e8ed;' +
+                        'padding: 0.75rem;' +
+                        'margin-bottom: 0.75rem;' +
+                        'background: rgba(0,0,0,0.3);' +
+                        'border-radius: 10px;' +
+                        'border: 1px solid rgba(99, 102, 241, 0.3);' +
+                        'min-height: 3.5rem;' +
+                        'letter-spacing: 0.25em;' +
+                        'font-variant-numeric: tabular-nums;' +
+                    '}' +
+                    '.lc-channel-label {' +
+                        'font-size: 0.8rem;' +
+                        'color: #8b8b9a;' +
+                        'text-align: center;' +
+                        'margin-bottom: 0.5rem;' +
+                        'text-transform: uppercase;' +
+                        'letter-spacing: 0.1em;' +
+                    '}' +
+                    '#lc-channel-numpad {' +
+                        'display: grid;' +
+                        'grid-template-columns: repeat(3, 1fr);' +
+                        'gap: 6px;' +
+                    '}' +
+                    '#lc-channel-numpad button {' +
+                        'padding: 0.875rem;' +
+                        'font-size: 1.25rem;' +
+                        'font-weight: 600;' +
+                        'border: 1px solid rgba(255,255,255,0.08);' +
+                        'border-radius: 10px;' +
+                        'background: rgba(99, 102, 241, 0.2);' +
+                        'color: #e8e8ed;' +
+                        'cursor: pointer;' +
+                        'transition: all 0.15s;' +
+                        'touch-action: manipulation;' +
+                        '-webkit-tap-highlight-color: transparent;' +
+                    '}' +
+                    '#lc-channel-numpad button:hover {' +
+                        'background: rgba(99, 102, 241, 0.4);' +
+                    '}' +
+                    '#lc-channel-numpad button:active {' +
+                        'transform: scale(0.95);' +
+                        'background: rgba(99, 102, 241, 0.5);' +
+                    '}' +
+                    '#lc-channel-numpad .ch-clear {' +
+                        'background: rgba(239, 68, 68, 0.25);' +
+                        'color: #f87171;' +
+                    '}' +
+                    '#lc-channel-numpad .ch-clear:hover {' +
+                        'background: rgba(239, 68, 68, 0.4);' +
+                    '}' +
+                    '#lc-channel-numpad .ch-go {' +
+                        'background: rgba(34, 197, 94, 0.3);' +
+                        'color: #4ade80;' +
+                    '}' +
+                    '#lc-channel-numpad .ch-go:hover {' +
+                        'background: rgba(34, 197, 94, 0.5);' +
+                    '}' +
+                '</style>' +
+                '<div class="lc-channel-label">Enter Channel</div>' +
+                '<div id="lc-channel-display">---</div>' +
+                '<div id="lc-channel-numpad">' +
+                    '<button type="button" data-digit="1">1</button>' +
+                    '<button type="button" data-digit="2">2</button>' +
+                    '<button type="button" data-digit="3">3</button>' +
+                    '<button type="button" data-digit="4">4</button>' +
+                    '<button type="button" data-digit="5">5</button>' +
+                    '<button type="button" data-digit="6">6</button>' +
+                    '<button type="button" data-digit="7">7</button>' +
+                    '<button type="button" data-digit="8">8</button>' +
+                    '<button type="button" data-digit="9">9</button>' +
+                    '<button type="button" class="ch-clear" data-action="clear">C</button>' +
+                    '<button type="button" data-digit="0">0</button>' +
+                    '<button type="button" class="ch-go" data-action="go">GO</button>' +
+                '</div>';
+
+            var numpad = overlay.querySelector('#lc-channel-numpad');
+            numpad.addEventListener('click', function(e) {
+                var btn = e.target.closest('button');
+                if (!btn) return;
+
+                var digit = btn.getAttribute('data-digit');
+                var action = btn.getAttribute('data-action');
+
+                if (digit !== null) {
+                    ChannelBuffer.addDigit(digit);
+                } else if (action === 'clear') {
+                    ChannelBuffer.clear();
+                } else if (action === 'go') {
+                    ChannelBuffer.send();
+                }
+            });
+
+            if (options.position === 'fixed') {
+                overlay.classList.add('fixed-position');
+            }
+
+            var container = null;
+            if (options.container) {
+                container = typeof options.container === 'string'
+                    ? document.querySelector(options.container)
+                    : options.container;
+            }
+            if (container) {
+                container.appendChild(overlay);
+            } else {
+                document.body.appendChild(overlay);
+            }
+
+            this._element = overlay;
+            this._visible = true;
+            ChannelBuffer._overlay = overlay;
+        },
+
+        hide: function() {
+            if (this._element) {
+                this._element.style.display = 'none';
+                this._visible = false;
+            }
+        },
+
+        destroy: function() {
+            if (this._element && this._element.parentNode) {
+                this._element.parentNode.removeChild(this._element);
+            }
+            this._element = null;
+            this._visible = false;
+            ChannelBuffer._overlay = null;
+        },
+
+        isVisible: function() {
+            return this._visible;
+        }
+    };
+
+    // Global callbacks so LiveCode can send channel numbers directly
+    // Usage from LiveCode: do "sendChannelDigit('2')" in widget "browser"
+    window.sendChannelDigit = function(digit) {
+        ChannelBuffer.addDigit(digit);
+    };
+
+    // Usage from LiveCode: do "sendChannelNumber('219')" in widget "browser"
+    window.sendChannelNumber = function(channel) {
+        ChannelBuffer._digits = String(channel);
+        ChannelBuffer.send();
+    };
+
+    // Usage from LiveCode: do "clearChannelBuffer()" in widget "browser"
+    window.clearChannelBuffer = function() {
+        ChannelBuffer.clear();
+    };
+
     // Export to global scope
     window.LiveCodeCompat = {
         isLiveCode: isLiveCode,
@@ -402,6 +678,8 @@
         bridge: LiveCodeBridge,
         fetch: FetchWrapper.fetch.bind(FetchWrapper),
         keyboard: KeyboardHelper,
+        channelBuffer: ChannelBuffer,
+        channelOverlay: ChannelOverlay,
 
         // Utility to check environment
         getEnvironment: function() {
@@ -436,6 +714,7 @@
     // Debug logging for LiveCode context
     if (isLiveCode) {
         console.log('LiveCode Browser Widget detected - compatibility layer active');
+        console.log('Channel buffer ready - use sendChannelDigit(), sendChannelNumber(), or channel overlay');
     }
 
 })(window);
