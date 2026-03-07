@@ -143,6 +143,38 @@ class IOTStatusChecker
     }
 
     /**
+     * Check if a CURL handle indicates the device is reachable.
+     * Considers any HTTP response (even 4xx/5xx) as "online" since it means
+     * the device is responding. Also treats certain CURL errors as online
+     * when they indicate the host accepted a TCP connection.
+     */
+    private function isCurlResponseOnline($ch): bool
+    {
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($httpCode > 0) {
+            return true;
+        }
+
+        // Check if we at least established a TCP connection.
+        // Some IOT devices accept connections but don't speak HTTP properly,
+        // which causes CURL errors even though the device is reachable.
+        $errno = curl_errno($ch);
+        $connectTime = curl_getinfo($ch, CURLINFO_CONNECT_TIME);
+
+        // If TCP connected (connect time > 0) but transfer failed, device is up
+        if ($connectTime > 0) {
+            return true;
+        }
+
+        // CURLE_OPERATION_TIMEDOUT (28) after connecting means device is slow but alive
+        if ($errno === CURLE_OPERATION_TIMEDOUT && $connectTime > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check status of a single device with HTTP first, ping fallback
      */
     private function checkDeviceStatus(string $address): string
@@ -150,27 +182,27 @@ class IOTStatusChecker
         // Clean up the address
         $address = trim($address);
         $address = preg_replace('/^https?:\/\//', '', $address);
-        
-        // Try HTTP first
+
+        // Try HTTP GET (not HEAD - many IOT devices don't handle HEAD requests)
         $ch = curl_init("http://{$address}");
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 3,
-            CURLOPT_CONNECTTIMEOUT => 2,
-            CURLOPT_NOBODY => true,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_CONNECTTIMEOUT => 3,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT => 'IOT-Monitor/1.0'
+            CURLOPT_USERAGENT => 'IOT-Monitor/1.0',
+            CURLOPT_RANGE => '0-0',  // Only fetch first byte to minimize transfer
         ]);
 
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        @curl_exec($ch);
 
-        // If HTTP worked, return online
-        if ($result !== false && $httpCode > 0) {
+        if ($this->isCurlResponseOnline($ch)) {
+            curl_close($ch);
             return 'online';
         }
+
+        curl_close($ch);
 
         // HTTP failed, try ping as fallback
         if ($this->pingDevice($address)) {
@@ -186,63 +218,63 @@ class IOTStatusChecker
     private function checkBatchStatus(array $addresses): array
     {
         $results = [];
-        
+
         // Use curl_multi for HTTP checks first
         $multiHandle = curl_multi_init();
         $curlHandles = [];
         $needsPing = [];
-        
+
         foreach ($addresses as $key => $address) {
             $address = trim($address);
             $address = preg_replace('/^https?:\/\//', '', $address);
-            
+
             $ch = curl_init("http://{$address}");
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 3,
-                CURLOPT_CONNECTTIMEOUT => 2,
-                CURLOPT_NOBODY => true,
+                CURLOPT_TIMEOUT => 4,
+                CURLOPT_CONNECTTIMEOUT => 3,
                 CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_USERAGENT => 'IOT-Monitor/1.0'
+                CURLOPT_USERAGENT => 'IOT-Monitor/1.0',
+                CURLOPT_RANGE => '0-0',
             ]);
-            
+
             curl_multi_add_handle($multiHandle, $ch);
             $curlHandles[$key] = $ch;
         }
-        
+
         // Execute all HTTP requests
         $running = null;
         do {
-            curl_multi_exec($multiHandle, $running);
-            curl_multi_select($multiHandle);
-        } while ($running > 0);
-        
+            $status = curl_multi_exec($multiHandle, $running);
+            if ($running > 0) {
+                curl_multi_select($multiHandle, 1);
+            }
+        } while ($running > 0 && $status === CURLM_OK);
+
         // Check HTTP results and identify devices that need ping fallback
         foreach ($curlHandles as $key => $ch) {
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            
-            if ($httpCode > 0) {
+            if ($this->isCurlResponseOnline($ch)) {
                 $results[$key] = 'online';
             } else {
                 // HTTP failed, mark for ping check
                 $needsPing[$key] = $addresses[$key];
                 $results[$key] = 'offline'; // default to offline
             }
-            
+
             curl_multi_remove_handle($multiHandle, $ch);
             curl_close($ch);
         }
-        
+
         curl_multi_close($multiHandle);
-        
+
         // Now ping the devices that failed HTTP
         foreach ($needsPing as $key => $address) {
             if ($this->pingDevice($address)) {
                 $results[$key] = 'online';
             }
         }
-        
+
         return $results;
     }
 
@@ -402,11 +434,15 @@ class IOTStatusChecker
     }
 }
 
-// Handle request
+// Handle request with output buffering to prevent stray output from corrupting JSON
+ob_start();
 try {
     $checker = new IOTStatusChecker();
+    // Discard any warnings/notices that leaked into the output buffer
+    ob_end_clean();
     $checker->handleRequest();
 } catch (Exception $e) {
+    ob_end_clean();
     http_response_code(500);
     echo json_encode([
         'success' => false,
